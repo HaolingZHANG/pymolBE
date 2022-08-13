@@ -1,7 +1,8 @@
 from numpy import array
 from os import environ
 from warnings import filterwarnings
-from Bio.PDB.Atom import Atom
+# noinspection PyPackageRequirements
+from Bio.PDB.Atom import Atom  # it is writen in requirements.txt
 
 filterwarnings("ignore")
 
