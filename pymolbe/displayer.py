@@ -1,132 +1,227 @@
 from io import BytesIO
 from numpy import array
+from os import environ, remove
 from pymol2 import PyMOL
-from PIL import Image
+from PIL import Image, ImageSequence
 from matplotlib import pyplot, animation
 
 
-def draw_an_individual(segment, pdb_path, save_path, is_movie=False,
-                       cluster_index=None, cluster_total=None, member_number=None):
+def draw_colorfully(load_path, save_path, information,
+                    representation=None, residue_colors=None, neglected_color=None,
+                    dpi=400, is_movie=False, shafts="xyz", degree=10, fps=10):
     """
-    Draw the structures of token one by one (or only the average structure).
+    Draw a molecular structure colorfully.
 
-    :param segment: segment.
-    :type segment: str
+    :param load_path: path to load structure file.
+    :type load_path: str
 
-    :param cluster_index: cluster index in the cluster group of this token.
-    :type cluster_index: int
-
-    :param cluster_total: the cluster number of the cluster group.
-    :type cluster_total: int
-
-    :param member_number: member number in this cluster.
-    :type member_number: int
-
-    :param pdb_path: path to load PDB file.
-    :type pdb_path: str
-
-    :param save_path: parent path to save file.
+    :param save_path: path to save display file.
     :type save_path: str
+
+    :param information: segment information.
+    :type information: str
+
+    :param representation: representation type.
+    :type representation: str
+
+    :param residue_colors: pair of the residue and the color.
+    :type residue_colors: dict or None
+
+    :param neglected_color: neglected color.
+    :type neglected_color: str or None
+
+    :param dpi: dots per inch.
+    :type dpi: int
 
     :param is_movie: display through animation.
     :type is_movie: bool
 
-    .. note::
-        reference: Warren L. DeLano (2002) CCP4 Newsletter on protein crystallography
-    """
-    token_info = "[" + str(len(segment)) + "]" + segment
-    if cluster_index is not None and cluster_total is not None:
-        if member_number is not None:
-            cluster_info = "[" + str(cluster_index + 1) + "-" + str(cluster_total) + "(" + str(member_number) + ")]"
-        else:
-            cluster_info = "[" + str(cluster_index + 1) + "-" + str(cluster_total) + "]"
-
-    else:
-        cluster_info = ""
-
-    with PyMOL() as mol:
-        mol.cmd.load(pdb_path, quiet=1)
-        set_initial_state(mol=mol)
-        set_residue_colors(mol=mol)
-        save_as_required(mol=mol, is_movie=is_movie, save_path=save_path, file_name=token_info + cluster_info)
-
-
-def draw_a_population(token_segment, cluster_index, cluster_total, pdb_paths, save_path,
-                      is_movie=False, display_limit=1):
-    """
-    Draw the structures of token as the cluster.
-
-    :param token_segment: token segment.
-    :type token_segment: str
-
-    :param cluster_index: cluster index in the cluster group of this token.
-    :type cluster_index: int
-
-    :param cluster_total: the cluster number of the cluster group.
-    :type cluster_total: int
-
-    :param pdb_paths: paths to load different PDB file.
-    :type pdb_paths: list
-
-    :param save_path: parent path to save file.
-    :type save_path: str
+    :param shafts: rotating shafts.
+    :type shafts: str
 
     :param is_movie: display through animation.
     :type is_movie: bool
 
-    :param display_limit: maximum number (limit) of individual needs to be display.
-    :type display_limit: int
+    :param degree: single rotation angle (available at is_movie=True).
+    :type degree: int
 
-    .. note::
-        reference: Warren L. DeLano (2002) CCP4 Newsletter on protein crystallography
+    :param fps: frames per second (available at is_movie=True).
+    :type fps: int
     """
-    token_info = "[" + str(len(token_segment)) + "]" + token_segment
-    cluster_info = "[" + str(cluster_index + 1) + "-" + str(cluster_total) + "(" + str(len(pdb_paths)) + ")]"
-
     with PyMOL() as mol:
-        if display_limit is None or display_limit >= len(pdb_paths):
-            for pdb_path in pdb_paths:
-                mol.cmd.load(pdb_path, quiet=1)
-        else:
-            for display_index in range(0, len(pdb_paths), len(pdb_paths) // display_limit):
-                mol.cmd.load(pdb_paths[display_index], quiet=1)
-        set_initial_state(mol=mol)
-        set_residue_colors(mol=mol)
-        save_as_required(mol=mol, is_movie=is_movie, save_path=save_path, file_name=token_info + cluster_info)
+        mol.cmd.load(load_path, quiet=1)
+        set_initial_state(mol=mol, representation=representation)
+        set_residue_colors(mol=mol, residue_colors=residue_colors, neglected_color=neglected_color)
+        save_figure(mol=mol, is_movie=is_movie, save_path=save_path, file_name=information,
+                    shafts=shafts, dpi=dpi, degree=degree, fps=fps)
 
 
-def draw_motifs_in_a_protein(motif_colors, pdb_path, pdb_name, save_path, is_movie=False):
+def draw_specially(load_path, save_path, information,
+                   representation=None, motif_colors=None, neglected_color=None,
+                   dpi=400, is_movie=False, shafts="xyz", degree=10, fps=10):
     """
-    Draw a protein by the motif vision.
+    Draw a molecular structure with special motifs.
+
+    :param load_path: path to load structure file.
+    :type load_path: str
+
+    :param save_path: path to save display file.
+    :type save_path: str
+
+    :param information: segment information.
+    :type information: str
+
+    :param representation: representation type.
+    :type representation: str
 
     :param motif_colors: pair of the motif and the color.
     :type motif_colors: dict
 
-    :param pdb_path: path to load PDB file.
-    :type pdb_path: str
+    :param neglected_color: neglected color.
+    :type neglected_color: str or None
 
-    :param pdb_name: display name for saving.
-    :type pdb_name: str
-
-    :param save_path: parent path to save file.
-    :type save_path: str
+    :param dpi: dots per inch.
+    :type dpi: int
 
     :param is_movie: display through animation.
     :type is_movie: bool
 
-    .. note::
-        reference: Warren L. DeLano (2002) CCP4 Newsletter on protein crystallography
+    :param shafts: rotating shafts.
+    :type shafts: str
+
+    :param is_movie: display through animation.
+    :type is_movie: bool
+
+    :param degree: single rotation angle (available at is_movie=True).
+    :type degree: int
+
+    :param fps: frames per second (available at is_movie=True).
+    :type fps: int
     """
     with PyMOL() as mol:
-        mol.cmd.load(pdb_path, quiet=1)
-        set_initial_state(mol=mol)
-        set_motif_colors(mol=mol, motif_colors=motif_colors)
-        save_as_required(mol=mol, is_movie=is_movie, save_path=save_path, file_name=pdb_name)
+        mol.cmd.load(load_path, quiet=1)
+        set_initial_state(mol=mol, representation=representation)
+        set_motif_colors(mol=mol, motif_colors=motif_colors, neglected_color=neglected_color)
+        save_figure(mol=mol, is_movie=is_movie, save_path=save_path, file_name=information,
+                    shafts=shafts, dpi=dpi, degree=degree, fps=fps)
+
+
+def merge_pictures(load_paths, save_path, row_number, column_number, figure_size, titles=None, dpi=200):
+    """
+    Merge multiple structure pictures into a picture.
+
+    :param load_paths: paths to load structure picture.
+    :type load_paths: list
+
+    :param save_path: path to save display file.
+    :type save_path: str
+
+    :param row_number: picture number in a row.
+    :type row_number: int
+
+    :param column_number: picture number in a column.
+    :type column_number: int
+
+    :param figure_size: size of saved figure.
+    :type figure_size: tuple
+
+    :param titles: titles of each load paths if required.
+    :type titles: list or None
+
+    :param dpi: dots per inch.
+    :type dpi: int
+    """
+    assert len(load_paths) <= row_number * column_number
+    if titles is not None:
+        assert len(titles) == len(load_paths)
+
+    pyplot.figure(figsize=figure_size)
+    for location in range(len(load_paths)):
+        pyplot.subplot(row_number, column_number, location + 1)
+        if titles is not None:
+            pyplot.title(titles[location])
+        pyplot.imshow(Image.open(load_paths[location]))
+        pyplot.xticks([])
+        pyplot.yticks([])
+        pyplot.axis('off')
+
+    pyplot.savefig(save_path, dpi=dpi)
+    pyplot.close()
+
+
+def merge_animations(load_paths, save_path, row_number, column_number, figure_size, titles=None, fps=10, dpi=200):
+    """
+    Merge multiple structure animations into a animation.
+
+    :param load_paths: paths to load structure animation.
+    :type load_paths: list
+
+    :param save_path: path to save display file.
+    :type save_path: str
+
+    :param row_number: picture number in a row.
+    :type row_number: int
+
+    :param column_number: picture number in a column.
+    :type column_number: int
+
+    :param figure_size: size of saved figure.
+    :type figure_size: tuple
+
+    :param titles: titles of each load paths if required.
+    :type titles: list or None
+
+    :param fps: frames per second (available at is_movie=True).
+    :type fps: int
+
+    :param dpi: dots per inch.
+    :type dpi: int
+    """
+    assert len(load_paths) <= row_number * column_number
+    if titles is not None:
+        assert len(titles) == len(load_paths)
+
+    group, number = None, None
+    for load_path in load_paths:
+        with Image.open(load_path) as image:
+            frames = ImageSequence.all_frames(image)
+            if number is not None:
+                assert number == len(frames)
+            else:
+                number = len(frames)
+                group = [[] for _ in range(number)]
+            for frame_index, frame in enumerate(frames):
+                group[frame_index].append(frame)
+
+    new_frames = []
+    for frame_index, images in enumerate(group):
+        pyplot.figure(figsize=figure_size)
+        for location, image in enumerate(images):
+            pyplot.subplot(row_number, column_number, location + 1)
+            if titles is not None:
+                pyplot.title(titles[location])
+            pyplot.imshow(Image.open(load_paths[location]))
+            pyplot.xticks([])
+            pyplot.yticks([])
+            pyplot.axis('off')
+
+        temp_path = environ["TEMP"] + str(frame_index) + ".png"
+        pyplot.savefig(temp_path, dpi=dpi)
+        pyplot.close()
+
+        new_frames.append(array(Image.open(temp_path)))
+        remove(path=temp_path)
+
+    patch = pyplot.imshow(frames[0])
+    worker = animation.FuncAnimation(fig=pyplot.gcf(), frames=len(frames), interval=1,
+                                     func=lambda index: patch.set_data(frames[index]))
+    worker.save(save_path, writer="pillow", fps=fps)
+    pyplot.close()
 
 
 def set_initial_state(mol, representation="cartoon"):
     """
-    Set the initial state of protein.
+    Set the initial state of a structure.
 
     :param mol: PyMOL interface.
     :type mol: pymol2.PyMOL
@@ -137,9 +232,35 @@ def set_initial_state(mol, representation="cartoon"):
     if representation is not "cartoon":
         mol.cmd.hide(representation="cartoon")
         mol.cmd.show(representation=representation)
+    mol.cmd.hide(selection="(r. HOH)")
     mol.cmd.orient()
     mol.cmd.center()
     mol.cmd.zoom()
+
+
+def set_residue_colors(mol, residue_colors=None, neglected_color=None):
+    """
+    Set residue color for the structure.
+
+    :param mol: PyMOL interface.
+    :type mol: pymol2.PyMOL
+
+    :param residue_colors: pair of the residue and the color.
+    :type residue_colors: dict
+
+    :param neglected_color: neglected color.
+    :type neglected_color: str
+    """
+    if residue_colors is None:
+        residue_colors = {"ALA": "0x8A685C", "ARG": "0x402F42", "ASN": "0x7fA9C2", "ASP": "0x632D3B", "CYS": "0x7D779D",
+                          "GLN": "0x853D2F", "GLU": "0x88191F", "GLY": "0x945A4F", "HIS": "0xA29DB3", "ILE": "0x645D87",
+                          "LEU": "0x82A293", "LYS": "0xA58121", "MET": "0x6273A1", "PHE": "0xB33C24", "PRO": "0x73584D",
+                          "SER": "0x4F698A", "THR": "0xB9B9BB", "TRP": "0x686C47", "TYR": "0x674E3A", "VAL": "0x9D491B",
+                          "DA": "0xf2521b", "DT": "0xfabc09", "DC": "0x81cc28", "DG": "0x00aef0"}
+
+    mol.cmd.color(color=neglected_color if neglected_color is not None else "0xFFFFCC", selection="(all)")
+    for residue, hex_color in residue_colors.items():
+        mol.cmd.color(color=hex_color, selection="(r. " + residue + ")")
 
 
 def set_motif_colors(mol, motif_colors, neglected_color=None):
@@ -160,31 +281,7 @@ def set_motif_colors(mol, motif_colors, neglected_color=None):
         mol.cmd.color(color=concerned_color, selection="(ps. " + motif + ")")
 
 
-def set_residue_colors(mol, residue_colors=None, neglected_color=None):
-    """
-    Set residue color for the structure.
-
-    :param mol: PyMOL interface.
-    :type mol: pymol2.PyMOL
-
-    :param residue_colors: pair of the residue and the color.
-    :type residue_colors: dict
-
-    :param neglected_color: neglected color.
-    :type neglected_color: str
-    """
-    if residue_colors is None:
-        residue_colors = {"ALA": "0x8A685C", "ARG": "0x402F42", "ASN": "0x7fA9C2", "ASP": "0x632D3B", "CYS": "0x7D779D",
-                          "GLN": "0x853D2F", "GLU": "0x88191F", "GLY": "0x945A4F", "HIS": "0xA29DB3", "ILE": "0x645D87",
-                          "LEU": "0x82A293", "LYS": "0xA58121", "MET": "0x6273A1", "PHE": "0xB33C24", "PRO": "0x73584D",
-                          "SER": "0x4F698A", "THR": "0xB9B9BB", "TRP": "0x686C47", "TYR": "0x674E3A", "VAL": "0x9D491B"}
-
-    mol.cmd.color(color=neglected_color if neglected_color is not None else "0xFFFFCC", selection="(all)")
-    for residue, hex_color in residue_colors.items():
-        mol.cmd.color(color=hex_color, selection="(r. " + residue + ")")
-
-
-def save_as_required(mol, save_path, file_name, dpi=600, is_movie=False, degree=30, fps=20):
+def save_figure(mol, save_path, file_name, shafts="xyz", dpi=400, is_movie=False, degree=10, fps=10):
     """
     Save structure file as the requirement.
 
@@ -196,6 +293,9 @@ def save_as_required(mol, save_path, file_name, dpi=600, is_movie=False, degree=
 
     :param file_name: file name.
     :type file_name: str
+
+    :param shafts: rotating shafts.
+    :type shafts: str
 
     :param dpi: dots per inch.
     :type dpi: int
@@ -212,7 +312,7 @@ def save_as_required(mol, save_path, file_name, dpi=600, is_movie=False, degree=
     if is_movie:
         pyplot.axis("off")
         frames = []
-        for axis in ["x", "y", "z"]:
+        for axis in shafts:
             for time in range(360 // degree + 1):
                 mol.cmd.rotate(axis=axis, angle=degree)
                 mol.cmd.ray(quiet=1)
