@@ -2,7 +2,7 @@
 Customized batch exhibition of three-dimensional molecules based on the pymol framework
 
 ## Installation
-You can use this tool through [pymolbe.py](https://github.com/HaolingZHANG/pymolBE/blob/main/pymolbe.py)
+You can use this tool through [pymolbe.py](https://github.com/HaolingZHANG/pymolBE/blob/main/pymolbe.py).
 This tool requires a Python version >=3.7, 
 as well as some basic libraries 
 [PyMOL 2.5.0](https://pymol.org/2/), [biopython 1.78](https://pypi.org/project/biopython/),
