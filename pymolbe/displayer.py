@@ -1,13 +1,13 @@
 from io import BytesIO
+from matplotlib import pyplot, animation
 from numpy import array
 from os import environ, remove
 from pymol2 import PyMOL
 from PIL import Image, ImageSequence
-from matplotlib import pyplot, animation
 
 
-def draw_colorfully(load_path, save_path, information,
-                    representation=None, residue_colors=None, neglected_color=None,
+def draw_colorfully(load_path, save_path,
+                    representation=None, residue_colors=None, neglected_color=None, hides=None,
                     dpi=400, is_movie=False, shafts="xyz", degree=10, fps=10):
     """
     Draw a molecular structure colorfully.
@@ -18,17 +18,17 @@ def draw_colorfully(load_path, save_path, information,
     :param save_path: path to save display file.
     :type save_path: str
 
-    :param information: segment information.
-    :type information: str
-
     :param representation: representation type.
-    :type representation: str
+    :type representation: str or None
 
     :param residue_colors: pair of the residue and the color.
     :type residue_colors: dict or None
 
     :param neglected_color: neglected color.
     :type neglected_color: str or None
+
+    :param hides: hided molecules:
+    :type hides: list or None
 
     :param dpi: dots per inch.
     :type dpi: int
@@ -50,14 +50,13 @@ def draw_colorfully(load_path, save_path, information,
     """
     with PyMOL() as mol:
         mol.cmd.load(load_path, quiet=1)
-        set_initial_state(mol=mol, representation=representation)
+        set_initial_state(mol=mol, representation=representation, hides=hides)
         set_residue_colors(mol=mol, residue_colors=residue_colors, neglected_color=neglected_color)
-        save_figure(mol=mol, is_movie=is_movie, save_path=save_path, file_name=information,
-                    shafts=shafts, dpi=dpi, degree=degree, fps=fps)
+        save_figure(mol=mol, is_movie=is_movie, save_path=save_path, shafts=shafts, dpi=dpi, degree=degree, fps=fps)
 
 
-def draw_specially(load_path, save_path, information,
-                   representation=None, motif_colors=None, neglected_color=None,
+def draw_specially(load_path, save_path,
+                   representation=None, motif_colors=None, neglected_color=None, hides=None,
                    dpi=400, is_movie=False, shafts="xyz", degree=10, fps=10):
     """
     Draw a molecular structure with special motifs.
@@ -68,9 +67,6 @@ def draw_specially(load_path, save_path, information,
     :param save_path: path to save display file.
     :type save_path: str
 
-    :param information: segment information.
-    :type information: str
-
     :param representation: representation type.
     :type representation: str
 
@@ -79,6 +75,9 @@ def draw_specially(load_path, save_path, information,
 
     :param neglected_color: neglected color.
     :type neglected_color: str or None
+
+    :param hides: hided molecules:
+    :type hides: list or None
 
     :param dpi: dots per inch.
     :type dpi: int
@@ -100,10 +99,9 @@ def draw_specially(load_path, save_path, information,
     """
     with PyMOL() as mol:
         mol.cmd.load(load_path, quiet=1)
-        set_initial_state(mol=mol, representation=representation)
+        set_initial_state(mol=mol, representation=representation, hides=hides)
         set_motif_colors(mol=mol, motif_colors=motif_colors, neglected_color=neglected_color)
-        save_figure(mol=mol, is_movie=is_movie, save_path=save_path, file_name=information,
-                    shafts=shafts, dpi=dpi, degree=degree, fps=fps)
+        save_figure(mol=mol, is_movie=is_movie, save_path=save_path, shafts=shafts, dpi=dpi, degree=degree, fps=fps)
 
 
 def merge_pictures(load_paths, save_path, row_number, column_number, figure_size, titles=None, dpi=200):
@@ -219,7 +217,7 @@ def merge_animations(load_paths, save_path, row_number, column_number, figure_si
     pyplot.close()
 
 
-def set_initial_state(mol, representation="cartoon"):
+def set_initial_state(mol, representation="cartoon", hides=None):
     """
     Set the initial state of a structure.
 
@@ -228,11 +226,19 @@ def set_initial_state(mol, representation="cartoon"):
 
     :param representation: representation type.
     :type representation: str
+
+    :param hides: hided molecules:
+    :type hides: list or None
     """
+    if representation is None:
+        representation = "cartoon"
+
     if representation is not "cartoon":
         mol.cmd.hide(representation="cartoon")
         mol.cmd.show(representation=representation)
-    mol.cmd.hide(selection="(r. HOH)")
+    if hides is not None:
+        for hide_selection in hides:
+            mol.cmd.hide(selection=hide_selection)
     mol.cmd.orient()
     mol.cmd.center()
     mol.cmd.zoom()
@@ -265,7 +271,7 @@ def set_residue_colors(mol, residue_colors=None, neglected_color=None):
 
 def set_motif_colors(mol, motif_colors, neglected_color=None):
     """
-    Set the colors of token.
+    Set the color of each motif.
 
     :param mol: PyMOL interface.
     :type mol: pymol2.PyMOL
@@ -281,7 +287,7 @@ def set_motif_colors(mol, motif_colors, neglected_color=None):
         mol.cmd.color(color=concerned_color, selection="(ps. " + motif + ")")
 
 
-def save_figure(mol, save_path, file_name, shafts="xyz", dpi=400, is_movie=False, degree=10, fps=10):
+def save_figure(mol, save_path, shafts="xyz", dpi=400, is_movie=False, degree=10, fps=10):
     """
     Save structure file as the requirement.
 
@@ -290,9 +296,6 @@ def save_figure(mol, save_path, file_name, shafts="xyz", dpi=400, is_movie=False
 
     :param save_path: path to save file.
     :type save_path: str
-
-    :param file_name: file name.
-    :type file_name: str
 
     :param shafts: rotating shafts.
     :type shafts: str
@@ -310,6 +313,7 @@ def save_figure(mol, save_path, file_name, shafts="xyz", dpi=400, is_movie=False
     :type fps: int
     """
     if is_movie:
+        assert save_path[-4:] == ".gif"
         pyplot.axis("off")
         frames = []
         for axis in shafts:
@@ -321,8 +325,9 @@ def save_figure(mol, save_path, file_name, shafts="xyz", dpi=400, is_movie=False
         patch = pyplot.imshow(frames[0])
         worker = animation.FuncAnimation(fig=pyplot.gcf(), frames=len(frames), interval=1,
                                          func=lambda frame_index: patch.set_data(frames[frame_index]))
-        worker.save(save_path + file_name + ".gif", writer="pillow", fps=fps)
+        worker.save(save_path, writer="pillow", fps=fps)
         pyplot.close()
     else:
+        assert save_path[-4:] == ".png"
         mol.cmd.ray(quiet=1)
-        mol.cmd.png(filename=save_path + file_name, dpi=dpi, quiet=1)
+        mol.cmd.png(filename=save_path, dpi=dpi, quiet=1)

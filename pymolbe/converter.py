@@ -1,4 +1,4 @@
-from numpy import array
+from numpy import array, dot, transpose, linalg
 from os import environ
 from warnings import filterwarnings
 # noinspection PyPackageRequirements
@@ -97,7 +97,7 @@ def write_atom_line(atom, atom_number, residue, chain_index):
     return line
 
 
-def pdb_file_to_protein_structure(protein_path, minimum_length=4):
+def pdb_file_to_protein_structure(protein_path, minimum_length=1):
     """
     Obtain peptides from the PDB file.
 
@@ -105,7 +105,6 @@ def pdb_file_to_protein_structure(protein_path, minimum_length=4):
     :type protein_path: str
 
     :param minimum_length: minimum length of peptide.
-    :keyword minimum_length: at least 4 points are required to show 3 spatial angles.
     :type minimum_length: int
 
     :returns: peptide chains, their short data, and additional residue data if the file has.
@@ -254,3 +253,43 @@ def get_amino_acid(amino_acid):
         return protein_letters[amino_acid]
     else:
         return "-"
+
+
+def align(candidate_structure, reference_structure):
+    """
+    Rotate candidate structure unto reference structure using Kabsch algorithm based on each position.
+
+    :param candidate_structure: candidate structure represented by three-dimension position list.
+    :type candidate_structure: numpy.ndarray
+
+    :param reference_structure: reference structure represented by three-dimension position list.
+    :type reference_structure: numpy.ndarray
+
+    :returns candidate structure, reference structure: final candidate structure and reference structure.
+    :rtype numpy.ndarray, numpy.ndarray
+
+    .. note::
+        reference [1]: Yang Zhang and Jeffrey Skolnick (2004) Proteins
+
+        reference [2]: Wolfgang Kabsch (1976) Acta Crystallogr. D.
+    """
+    for center_index in range(len(candidate_structure)):
+        # unify the center point.
+        candidate = candidate_structure - candidate_structure[center_index]
+        reference = reference_structure - reference_structure[center_index]
+        center = dot(transpose(candidate), reference)
+
+        # decompose the singular value for rotation matrix.
+        translation, _, unitary = linalg.svd(center)
+        if (linalg.det(translation) * linalg.det(unitary)) < 0.0:
+            translation[:, -1] = -translation[:, -1]
+
+        # create rotation matrix and rotate source structure.
+        rotation = dot(translation, unitary)
+        candidate = dot(candidate, rotation)
+
+        # recover the original state of reference structure.
+        candidate += reference_structure[center_index]
+        reference += reference_structure[center_index]
+
+        yield candidate, reference
