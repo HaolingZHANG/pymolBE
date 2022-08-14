@@ -218,7 +218,7 @@ for used_path in temp_paths:
 and obtain
 
 <p align="center">
-<img src="./examples/figures/m_ps.fig" alt="m_ps.fig" title="m_ps.fig", width=100%/>
+<img src="./examples/figures/m_ps.gif" alt="m_ps.gif" title="m_ps.gif", width=100%/>
 </p>
 
 
@@ -254,5 +254,5 @@ for used_path in temp_paths:
 and obtain
 
 <p align="center">
-<img src="./examples/figures/m_pi.fig" alt="m_pi.fig" title="m_pi.fig", width=100%/>
+<img src="./examples/figures/m_pi.gif" alt="m_pi.gif" title="m_pi.gif", width=100%/>
 </p>
