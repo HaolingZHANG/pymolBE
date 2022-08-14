@@ -32,8 +32,8 @@ Please check each interface annotation for more information.
 - [pymolbe.merge_pictures](https://github.com/HaolingZHANG/pymolBE/blob/main/pymolbe.py#L107)
 - [pymolbe.merge_animations](https://github.com/HaolingZHANG/pymolBE/blob/main/pymolbe.py#L152)
 - [pymolbe.set_initial_state](https://github.com/HaolingZHANG/pymolBE/blob/main/pymolbe.py#L253)
-- [pymolbe.set_residue_colors](https://github.com/HaolingZHANG/pymolBE/blob/main/pymolbe.py#280)
-- [pymolbe.set_motif_colors](https://github.com/HaolingZHANG/pymolBE/blob/main/pymolbe.py#305)
+- [pymolbe.set_residue_colors](https://github.com/HaolingZHANG/pymolBE/blob/main/pymolbe.py#L280)
+- [pymolbe.set_motif_colors](https://github.com/HaolingZHANG/pymolBE/blob/main/pymolbe.py#L305)
 
 
 ## Exhibition Examples
