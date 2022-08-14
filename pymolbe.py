@@ -182,22 +182,12 @@ def merge_animations(load_paths, save_path,
     :param dpi: dots per inch.
     :type dpi: int
     """
-    def function(index):
-        if index > 0:
-            pass
-        else:
-            pyplot.imshow(new_frames[0])
-            pyplot.xticks([])
-            pyplot.yticks([])
-            return pyplot.axis("off")
-
     if titles is not None:
         assert len(titles) == len(load_paths)
 
     if simultaneous:
         assert len(load_paths) <= row_number * column_number
         group, number = None, None
-        i = 0
         for load_path in load_paths:
             with Image.open(load_path) as image:
                 frames = ImageSequence.all_frames(image)
@@ -208,9 +198,7 @@ def merge_animations(load_paths, save_path,
                     group = [[] for _ in range(number)]
                 for frame_index, frame in enumerate(frames):
                     group[frame_index].append(frame)
-            print(i + 1, len(load_paths))
-            i += 1
-        print()
+
         new_frames = []
         for frame_index, images in enumerate(group):
             pyplot.figure(figsize=figure_size, tight_layout=True)
@@ -230,8 +218,6 @@ def merge_animations(load_paths, save_path,
 
             new_frames.append(array(Image.open(temp_path)))
             remove(path=temp_path)
-
-            print(frame_index + 1, len(group))
     else:
         new_frames = []
         for location, load_path in enumerate(load_paths):
@@ -252,7 +238,6 @@ def merge_animations(load_paths, save_path,
 
                     new_frames.append(array(Image.open(temp_path)))
                     remove(path=temp_path)
-            print(location)
 
     pyplot.figure(figsize=figure_size, tight_layout=True)
     pyplot.xticks([])
