@@ -274,7 +274,7 @@ def set_initial_state(mol, representation="cartoon", hides=None):
             mol.cmd.hide(selection=hide_selection)
     mol.cmd.orient()
     mol.cmd.center()
-    mol.cmd.zoom()
+    mol.cmd.zoom(complete=1)
 
 
 def set_residue_colors(mol, residue_colors=None, neglected_color=None):
@@ -320,7 +320,7 @@ def set_motif_colors(mol, motif_colors, neglected_color=None):
         mol.cmd.color(color=concerned_color, selection="(ps. " + motif + ")")
 
 
-def save_figure(mol, save_path, shafts="xyz", dpi=400, is_movie=False, degree=10, fps=10):
+def save_figure(mol, save_path, shafts="xyz", dpi=400, is_movie=False, degree=10, fps=10, adaptive_size=False):
     """
     Save structure file as the requirement.
 
@@ -344,9 +344,25 @@ def save_figure(mol, save_path, shafts="xyz", dpi=400, is_movie=False, degree=10
 
     :param fps: frames per second (available at is_movie=True).
     :type fps: int
+
+    :param adaptive_size: change the display size according to the number of structural atoms.
+    :type adaptive_size: bool
     """
+    if adaptive_size:
+        atoms = mol.cmd.count_atoms('all')
+        if atoms < 1500:
+            width = (atoms // 100 + 1) * 240
+            height = (atoms // 100 + 1) * 180
+        else:
+            width = 4800
+            height = 3600
+    else:
+        width = 640
+        height = 480
+
     if is_movie:
         assert save_path[-4:] == ".gif"
+        pyplot.figure(figsize=(width / 100.00, height / 100.00))
         pyplot.axis("off")
         frames = []
         for axis in shafts:
@@ -363,4 +379,4 @@ def save_figure(mol, save_path, shafts="xyz", dpi=400, is_movie=False, degree=10
     else:
         assert save_path[-4:] == ".png"
         mol.cmd.ray(quiet=1)
-        mol.cmd.png(filename=save_path, dpi=dpi, quiet=1)
+        mol.cmd.png(filename=save_path, width=width, height=height, dpi=dpi, quiet=1)
